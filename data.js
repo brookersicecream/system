@@ -7,10 +7,10 @@ store_sequence=[
 ]
 
 stores={
-    reciLXPTeT7X6BpfX:"Herriman",
-    recAWRtheFL9hjYa9:"Provo",
-    rec9cc4WpKnQrvWe0:"Vineyard",
-    Herriman:"reciLXPTeT7X6BpfX",
-    Provo:"recAWRtheFL9hjYa9",
-    Vineyard:"rec9cc4WpKnQrvWe0"
+    recxfZ0QqJQwKKlMC:"Herriman",
+    recPqTEeqvuIVsUHO:"Provo",
+    recoGefTBA6p5ESLF:"Vineyard",
+    Herriman:"recxfZ0QqJQwKKlMC",
+    Provo:"recPqTEeqvuIVsUHO",
+    Vineyard:"recoGefTBA6p5ESLF"
 }

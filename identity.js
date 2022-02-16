@@ -225,13 +225,13 @@ function build_menu(menu_data){
     
     menu.push('<div><i id="menu-close" class="fas fa-times" onclick="hide_menu()" style="cursor: pointer;"></i></div>  ')
     for(const item of menu_data){
-        add_menu_item(menu, item, user_data.roles)
+        add_menu_item(menu, item, user_data.roles, user_data.stores)
     }
     console.log('menu_data',menu_data)
     tag("menu").innerHTML=menu.join("")
 }
 
-function add_menu_item(menu, menu_data, roles){//used to add a menu item
+function add_menu_item(menu, menu_data, roles, stores){//used to add a menu item
     if(menu_data.menu && !menu_data.label){
         // it must be an import of another menu
         for(const item of menu_data.menu){
@@ -245,6 +245,7 @@ function add_menu_item(menu, menu_data, roles){//used to add a menu item
         menu.push("<div><hr></div>")
         return
     }
+
     if(menu_data.roles){
         // a role is specified, if role is not in the users set of roles, get out of here
         console.log("roles", roles)
@@ -254,6 +255,14 @@ function add_menu_item(menu, menu_data, roles){//used to add a menu item
             return
         }
     }
+
+    if(menu_data.stores){
+        if(intersect(stores, menu_data.stores).length===0){
+            return
+        }
+    }
+
+
     if(menu_data.menu){
         // it's a submenu
         let label=menu_data.label
