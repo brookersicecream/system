@@ -274,7 +274,7 @@ async function inventory(params){
                 const html=[`
                 <table class="inventory-table">
                     <tr>
-                    <th class="sticky">Flavor</th>
+                    <th class="sticky">Item</th>
                     `]
                 for(const store of store_sequence){
                     html.push(`<th class="sticky">${store}</th>`)
