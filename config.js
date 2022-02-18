@@ -3,3 +3,7 @@
 function gas_deployment_id(){return(
   'AKfycbxVVL7tuBpF9tikBhg-NvdkFlqJn9aL-G7oPpeQ9nQVbH4WxPFG6vdq-TtiDYtjWpKb9A'
 )}
+
+
+// url to get app data published to github
+const data_url="https://brookersicecream.github.io/system/data/app_data.json"

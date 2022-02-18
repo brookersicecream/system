@@ -1,5 +1,4 @@
-
-
+let app_data=null
 let current_menu=[]
 const base=window.location.protocol + "//" + window.location.host + "/"
 
@@ -35,6 +34,13 @@ async function post_data(payload){
 
 async function initialize_app(){
     //This function initializes the page when it is loaded.
+
+    // get the published app data
+    const reply = await fetch(data_url)
+    //The request is made of Google App Script and the response is set to "response"
+    app_data = await reply.json()
+    console.log("app_data", app_data)
+
     let state="{}"
     window.onpopstate = function (event) {
         // call the function built into the URL
