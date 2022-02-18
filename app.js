@@ -330,18 +330,8 @@ async function inventory(params){
                         if(!data[id]){
                             
                             // scale a nonstandard size to a standard size
-                            const factor_id=record.fields.item[0] + "_" + record.fields.container[0]
                             let factor=app_data.inventory_conversion[factor_id]
-                            if(record.id==="recbYwX6kX2FkDGL1"){
-                                console.log ("Herriman butterscotch container factor:",factor, factor_id)
-                            }
-                            if(!factor){
-                                factor=1
-                            }
-                            if(record.id==="recbYwX6kX2FkDGL1"){
-                                console.log ("herriman butterscotch container factor:",factor)
-                            }
-
+                            if(!factor){factor=1}
                             data[id]={quantity:factor*record.fields.quantity,date:record.fields.date}
                         }
                     }
@@ -430,12 +420,6 @@ async function inventory(params){
                     }
                 }
 
-                // add quick buttons. The dipping cabinet locations can only have values of 0, 1/4, 1/2, 3/4, and 1. This will add buttons for inputs in the dipping cabinets.
-                // for(const [key,row] of Object.entries(window.rows)){
-                //     if(isNaN(row)){
-                //         add_buttons(row,"Dipping Cabinet")
-                //     }
-                // }
 
                 const val_map={
                     "0":0  ,
@@ -628,7 +612,8 @@ async function ice_cream_inventory(params){
                     //process through each available data item
                     for(record of response.data.records){
                         //identity the flavor/store combination for each observation
-                        const id = record.fields.item[0] + "|" + record.fields.store[0]
+                        
+                        const id = record.fields.item[0] + "|" + record.fields.store[0] + "|" + record.fields.container[0]
                         //Since the data is ordered by date, if we have already found an observation for a flavor/store combination, any additional obeservations are skipped.
                         if(!data[id]){
                             data[id]={quantity:record.fields.quantity,date:record.fields.date}
@@ -638,8 +623,11 @@ async function ice_cream_inventory(params){
                     // now fill the table with the most recent observations found for each flavor/store combination
                     for(const[key,value] of Object.entries(data)){
                         //create "boxes" for the store observations and totals of each flavor based on the identifiers already created for the individual cells (id's of the <td> tags)
-                        const total_box = tag(key.split("|")[0] + "|total")
-                        const box = tag(key)
+
+                        const ids=key.split("|")
+                        const total_box = tag(ids[0] + "|total")
+                        const box = tag(ids[0]+"|"+ids[1])
+
                         //There will be more than one current observation for a flavor in each store, so we need to total these observations by store. To do this, if there is not currently a value in the table for flavor/store, it is added. If there is an observation, the new observation is added to the one that is currently there (running total logic).
                         if(box.innerHTML===""){
                             box.innerHTML=value.quantity
@@ -831,40 +819,18 @@ function show_elements(className){// remvoes the hidden class to all elements of
 
 function add_buttons(item_id, container){
     //this function is used to create the input buttons for recording the inventory observations. Notice that we only use the options for case 3. We might use the other options in the future.
-    const box = tag(item_id + "|" + container.replace(/\s/g,"_"))    
+    const box = tag(item_id + "|" + container)
     const cell = box.parentElement
-    //console.log("adding buttons",item_id, container)
-    switch(app_data.inventory_containers[container]){
-        case "Serving Container":
-            box.style.display="none"
-            cell.appendChild(get_div_button(box,"20%",0,"0"))
-            cell.appendChild(get_div_button(box,"20%",.25,"&#188;"))
-            cell.appendChild(get_div_button(box,"20%",.5,"&#189;"))
-            cell.appendChild(get_div_button(box,"20%",.75,"&#190;"))
-            cell.appendChild(get_div_button(box,"20%",1,"1"))
-            break;
-        case "Dipping Cabinet":
-            box.style.display="none"
-            cell.appendChild(get_div_button(box,"20%",0,"0"))
-            cell.appendChild(get_div_button(box,"20%",.25,"&#188;"))
-            cell.appendChild(get_div_button(box,"20%",.5,"&#189;"))
-            cell.appendChild(get_div_button(box,"20%",.75,"&#190;"))
-            cell.appendChild(get_div_button(box,"20%",1,"1"))
-            break;
-        case "Tempering Freezer":
-            box.style.width="30px"
-            container.prepend(get_div_button(box,"15%",2))
-            container.prepend(get_div_button(box,"15%",1))
-            container.prepend(get_div_button(box,"15%",0))
-            break
-        case "Walk-in Freezers":
-            box.style.width="30px"
-            container.prepend(get_div_button(box,"15%",4))
-            container.prepend(get_div_button(box,"15%",3))
-            container.prepend(get_div_button(box,"15%",2))
-            container.prepend(get_div_button(box,"15%",1))
-            container.prepend(get_div_button(box,"15%",0))
-            break
+    console.log("adding buttons",item_id, container)
+    if(app_data.inventory_containers[container]==="Serving Container" ||
+       app_data.inventory_containers[container]==="Dipping Cabinet" ||
+       app_data.inventory_containers[container].substr(0,7)==="Opened " ){
+        box.style.display="none"
+        cell.appendChild(get_div_button(box,"20%",0,"0"))
+        cell.appendChild(get_div_button(box,"20%",.25,"&#188;"))
+        cell.appendChild(get_div_button(box,"20%",.5,"&#189;"))
+        cell.appendChild(get_div_button(box,"20%",.75,"&#190;"))
+        cell.appendChild(get_div_button(box,"20%",1,"1"))
     }
 }
 
