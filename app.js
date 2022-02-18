@@ -19,7 +19,7 @@ const unauthenticated_menu=[
     {},
     //The unauthenticated user is also presented with the "Login" and "Recover password" menu options.
     {label:"Login",function:"login()",home:"Login",panel:"login_panel"},
-    {label:"Recover Password",function:"recover_password()",panel:"recover"}, 
+    //{label:"Recover Password",function:"recover_password()",panel:"recover"}, 
 ]
 
 //This global variable sets the menu items for an autheticated user.  
@@ -30,29 +30,28 @@ const authenticated_menu=[
     {},
     //The authenticated user is also presented with additional menu options.
     //The first item loads the user's name (get_user_name) which is the label for a top-level menu which is built for the user functions
-    {label:get_user_name,id:"user-menu", menu:[
-        //the user functions include the ability to change their password and edit their personal data
-        {label:"Change Password",function:"change_password()",panel: "password_panel"},
-        {label:"Personal Data",function:"navigate({fn:'personal_data'})"},
-    ]},
+    // {label:get_user_name,id:"user-menu", menu:[
+    //     //the user functions include the ability to change their password and edit their personal data
+    //     {label:"Change Password",function:"change_password()",panel: "password_panel"},
+    //     {label:"Personal Data",function:"navigate({fn:'personal_data'})"},
+    // ]},
     //This menu item allows the user to logout
     {label:"Logout",function:"logout()", home:"Logout"},
     //This menu item builds a sub menu that provides the user with the functionality to request time off and see their requests
-    {label:"Time Off",id:"menu1",menu:[
-        {label:"Request Time Off",function:"navigate({fn:'request_time_off'})"}, 
-        {label:"My Requests",function:"navigate({fn:'show_time_off'})"}, 
-    ]},
+    // {label:"Time Off",id:"menu1",menu:[
+    //     {label:"Request Time Off",function:"navigate({fn:'request_time_off'})"}, 
+    //     {label:"My Requests",function:"navigate({fn:'show_time_off'})"}, 
+    // ]},
     //This menu item allows the user to add additional users. Note the "roles" property of the object. Only users with the role of "manager", "general manager", or "administrator" will see this menu item. User roles are not heirachical. All user types you wish to see a menu item must be listed in the elements of the array.
-    {label:"Add Employee",function:"navigate({fn:'create_account'})", roles:["manager","general manager","administrator"]}, 
     //This menu item adds the menu item for updating an inventory count. Notice how a parameter is passed to the "ice_cream_inventory" function
     //the remaining menu items are added
-    {label:"Employee List",function:"navigate({fn:'employee_list'})"},
     {label:"Enter Inventory",id:"inventory_menu",  menu:[
         {label:"Ice Cream",home:"Inventory",function:"navigate({fn:'ice_cream_inventory',params:{style:'update'}})"},
         {label:"Toppings",function:"navigate({fn:'inventory',params:{style:'update',list:'Toppings'}})"},
         {label:"Disposables",function:"navigate({fn:'inventory',params:{style:'update',list:'Disposables'}})"},
         {label:"Cleaning",function:"navigate({fn:'inventory',params:{style:'update',list:'Cleaning'}})"},
         {label:"Inclusion Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Inclusion Ingredients',stores:[app_data.stores['Vineyard']]}})"},
+        {label:"Drinking Chocolate Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Drinking Chocolate Ingredients'}})"},
     ]},
 
     {label:"Inventory Summary",id:"summary_menu", roles:["general manager","administrator"],  menu:[
@@ -61,12 +60,15 @@ const authenticated_menu=[
         {label:"Disposables",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Disposables'}})"},
         {label:"Cleaning",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Cleaning'}})"},
         {label:"Inclusion Ingredients",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Inclusion Ingredients'}})"},
+        {label:"Drinking Chocolate Ingredients",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Drinking Chocolate Ingredients'}})"},
     ]},
 
     {label:"Admin Tools",id:"menu2", roles:["manager","general manager","administrator"], menu:[
         {label:"Update User",function:"update_user()",panel:"update_user"},
         {label:"Archive Inventory",function:"navigate({fn:'archive_inventory'})"},
         {label:"Publish App Data",function:"publish_app_data()"},
+        {label:"Employee List",function:"navigate({fn:'employee_list'})"},
+        {label:"Add Employee",function:"navigate({fn:'create_account'})", roles:["manager","general manager","administrator"]}, 
     ]},
 
 ]
@@ -267,7 +269,7 @@ async function inventory(params){
 
                 console.log("response->", response)
                 //build the HMTL heading for the report
-                tag("inventory-title").innerHTML=`<h2>${app_data.inventory_lists[response.list.records[0].fields.list]} Inventory Summary</h2>`
+                tag("inventory-title").innerHTML=`<h2>${app_data.inventory_lists[response.list.records[0].fields.list]} <br>Inventory Summary</h2>`
 
 
                 //Build the table to display the report. The columns of the table are: Flavor, the stores available to the user, and the total inventory. Since only the owner is given the option to view inventory counts (see the autheticated_user global variable), all stores will be shown in the report.
@@ -558,7 +560,7 @@ async function ice_cream_inventory(params){
 
                 console.log("response--->", response)
                 //build the HMTL heading for the report
-                tag("inventory-title").innerHTML=`<h2>Ice Cream Inventory Summary</h2>`
+                tag("inventory-title").innerHTML=`<h2>Ice Cream<br>Inventory Summary</h2>`
 
 
                 //Build the table to display the report. The columns of the table are: Flavor, the stores available to the user, and the total inventory. Since only the owner is given the option to view inventory counts (see the autheticated_user global variable), all stores will be shown in the report.
