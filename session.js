@@ -165,7 +165,7 @@ async function personal_data(params){
 }    
 
 async function create_account(params){
-    if(!user_has_role(["owner","manager","administrator"])){show_home();return}
+    if(!user_has_role(["general manager","manager","administrator"])){show_home();return}
     const panel=tag("create_account_panel")
     hide_menu()
     
@@ -346,7 +346,7 @@ async function change_password(params){
   
 
 async function update_user(params,panel){
-    if(!user_has_role(["owner","manager","administrator"])){show_home();return}
+    if(!user_has_role(["general manager","manager","administrator"])){show_home();return}
     if(!panel){panel=tag("update_user")}
     if(typeof params === "string"){
         // passing in just an email address to be updated

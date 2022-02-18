@@ -42,8 +42,8 @@ const authenticated_menu=[
         {label:"Request Time Off",function:"navigate({fn:'request_time_off'})"}, 
         {label:"My Requests",function:"navigate({fn:'show_time_off'})"}, 
     ]},
-    //This menu item allows the user to add additional users. Note the "roles" property of the object. Only users with the role of "manager", "owner", or "administrator" will see this menu item. User roles are not heirachical. All user types you wish to see a menu item must be listed in the elements of the array.
-    {label:"Add Employee",function:"navigate({fn:'create_account'})", roles:["manager","owner","administrator"]}, 
+    //This menu item allows the user to add additional users. Note the "roles" property of the object. Only users with the role of "manager", "general manager", or "administrator" will see this menu item. User roles are not heirachical. All user types you wish to see a menu item must be listed in the elements of the array.
+    {label:"Add Employee",function:"navigate({fn:'create_account'})", roles:["manager","general manager","administrator"]}, 
     //This menu item adds the menu item for updating an inventory count. Notice how a parameter is passed to the "ice_cream_inventory" function
     //the remaining menu items are added
     {label:"Employee List",function:"navigate({fn:'employee_list'})"},
@@ -55,7 +55,7 @@ const authenticated_menu=[
         {label:"Inclusion Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Inclusion Ingredients',stores:[stores['Vineyard']]}})"},
     ]},
 
-    {label:"Inventory Summary",id:"summary_menu", roles:["owner","administrator"],  menu:[
+    {label:"Inventory Summary",id:"summary_menu", roles:["general manager","administrator"],  menu:[
         {label:"Ice Cream",home:"Inventory",function:"navigate({fn:'ice_cream_inventory',params:{style:'summary'}})"},
         {label:"Toppings",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Toppings'}})"},
         {label:"Disposables",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Disposables'}})"},
@@ -63,9 +63,10 @@ const authenticated_menu=[
         {label:"Inclusion Ingredients",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Inclusion Ingredients'}})"},
     ]},
 
-    {label:"Admin Tools",id:"menu2", roles:["manager","owner","administrator"], menu:[
+    {label:"Admin Tools",id:"menu2", roles:["manager","general manager","administrator"], menu:[
         {label:"Update User",function:"update_user()",panel:"update_user"},
         {label:"Archive Inventory",function:"navigate({fn:'archive_inventory'})"},
+        {label:"Publish App Data",function:"publish_app_data()"},
     ]},
 
 ]
@@ -1003,7 +1004,7 @@ async function employee_list(){
     }
 
     //determine if the user has a role that allows for employee updates.
-    const is_admin=intersect(get_user_data().roles, ["administrator","owner","manager"]).length>0
+    const is_admin=intersect(get_user_data().roles, ["administrator","general manager","manager"]).length>0
 
     if(response.status==="success"){
         const html=['<table style="background-color:white"><tr>']
@@ -1048,3 +1049,24 @@ async function employee_list(){
 
 }
 
+async function publish_app_data(){
+    const params={mode:"publish_app_data"}
+    const response=await post_data(params)
+    if(response.status==="success"){
+        message({
+            message:"Succesfully published data.",
+            title:"Success",
+            seconds:3
+        })
+    }else{
+        message({
+            message:response.message,
+            title:"Data Error",
+            kind:"error",
+            seconds:8    
+        })
+
+    }
+   
+
+}
