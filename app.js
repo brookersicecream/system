@@ -51,6 +51,7 @@ const authenticated_menu=[
         {label:"Disposables",function:"navigate({fn:'inventory',params:{style:'update',list:'Disposables'}})"},
         {label:"Cleaning",function:"navigate({fn:'inventory',params:{style:'update',list:'Cleaning'}})"},
         {label:"Inclusion Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Inclusion Ingredients',stores:[app_data.stores['Vineyard']]}})"},
+        {label:"Ice Cream Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Ice Cream Ingredients',stores:[app_data.stores['Vineyard']]}})"},
         {label:"Drinking Chocolate Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Drinking Chocolate Ingredients'}})"},
     ]},
 
@@ -60,10 +61,11 @@ const authenticated_menu=[
         {label:"Disposables",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Disposables'}})"},
         {label:"Cleaning",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Cleaning'}})"},
         {label:"Inclusion Ingredients",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Inclusion Ingredients'}})"},
+        {label:"Ice Cream Ingredients",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Ice Cream Ingredients'}})"},
         {label:"Drinking Chocolate Ingredients",home:"Inventory",function:"navigate({fn:'inventory',params:{style:'summary',list:'Drinking Chocolate Ingredients'}})"},
     ]},
 
-    {label:"Admin Tools",id:"menu2", roles:["manager","general manager","administrator"], menu:[
+    {label:"Admin Tools",id:"menu2", roles:["general manager","administrator"], menu:[
         {label:"Update User",function:"update_user()",panel:"update_user"},
         {label:"Archive Inventory",function:"navigate({fn:'archive_inventory'})"},
         {label:"Publish App Data",function:"publish_app_data()"},
