@@ -267,7 +267,7 @@ async function inventory(params){
 
                 console.log("response->", response)
                 //build the HMTL heading for the report
-                tag("inventory-title").innerHTML=`<h2>${response.list.records[0].fields.list} Inventory Summary</h2>`
+                tag("inventory-title").innerHTML=`<h2>${app_data.inventory_lists[response.list.records[0].fields.list]} Inventory Summary</h2>`
 
 
                 //Build the table to display the report. The columns of the table are: Flavor, the stores available to the user, and the total inventory. Since only the owner is given the option to view inventory counts (see the autheticated_user global variable), all stores will be shown in the report.
@@ -289,19 +289,19 @@ async function inventory(params){
                 //processing the data to fit in the table
                 for(record of response.list.records){
                     //add a new table row to the table for each flavor
-                    if(record.fields.category !== category){
+                    if(app_data.inventory_categories[record.fields.category] !== category){
                         // place the category header
-                        html.push(`<tr><th style="background-color:khaki" colspan=${app_data.store_sequence.length+2}>${record.fields.category}</th></tr>`)
-                        category=record.fields.category
+                        html.push(`<tr><th style="background-color:khaki" colspan=${app_data.store_sequence.length+2}>${app_data.inventory_categories[record.fields.category]}</th></tr>`)
+                        category=app_data.inventory_categories[record.fields.category]
 
                     }
                     html.push("<tr>")
                     
-                    html.push(`<td class="active" style="text-align:left">${record.fields.name}</td>`)
+                    html.push(`<td class="active" style="text-align:left">${app_data.inventory_items[record.fields.inventory_item]}</td>`)
                     //create empty cells in the table for the inventory counts. Notice that the ID for the empty cell is set to be a combination of the id for the flavor (record.id) and the store (stores[store]) corresponding to the column. This way the table can be populated with the correct data in the correct cells.
                     
                     for(store of app_data.store_sequence){
-                        console.log(app_data.stores[store], record.fields.store,record.fields.name)
+                        //console.log(app_data.stores[store], record.fields.store,record.fields.name)
                         let active="active"
                         if(intersect(app_data.stores[store], record.fields.store).length===0){
                             active="disabled"
@@ -324,10 +324,25 @@ async function inventory(params){
                     //process through each available data item
                     for(record of response.data.records){
                         //identity the flavor/store combination for each observation
-                        const id = record.fields.item[0] + "|" + record.fields.store[0]
-                        //Since the data is ordered by date, if we have already found an observation for a flavor/store combination, any additional obeservations are skipped.
+                        const id = record.fields.item[0] + "|" + record.fields.store[0] + "|" + record.fields.container[0]
+                        //Since the data is ordered by date, if we have already found an observation for an item/store/containter combination, any additional obeservations are skipped.
+
                         if(!data[id]){
-                            data[id]={quantity:record.fields.quantity,date:record.fields.date}
+                            
+                            // scale a nonstandard size to a standard size
+                            const factor_id=record.fields.item[0] + "_" + record.fields.container[0]
+                            let factor=app_data.inventory_conversion[factor_id]
+                            if(record.id==="recbYwX6kX2FkDGL1"){
+                                console.log ("Herriman butterscotch container factor:",factor, factor_id)
+                            }
+                            if(!factor){
+                                factor=1
+                            }
+                            if(record.id==="recbYwX6kX2FkDGL1"){
+                                console.log ("herriman butterscotch container factor:",factor)
+                            }
+
+                            data[id]={quantity:factor*record.fields.quantity,date:record.fields.date}
                         }
                     }
     
@@ -336,8 +351,9 @@ async function inventory(params){
                     // now fill the table with the most recent observations found for each flavor/store combination
                     for(const[key,value] of Object.entries(data)){
                         //create "boxes" for the store observations and totals of each flavor based on the identifiers already created for the individual cells (id's of the <td> tags)
-                        const total_box = tag(key.split("|")[0] + "|total")
-                        const box = tag(key)
+                        const ids=key.split("|")
+                        const total_box = tag(ids[0] + "|total")
+                        const box = tag(ids[0]+"|"+ids[1])
                         
                         //There will be more than one current observation for a flavor in each store, so we need to total these observations by store. To do this, if there is not currently a value in the table for flavor/store, it is added. If there is an observation, the new observation is added to the one that is currently there (running total logic).
                         if(box.innerHTML===""){
