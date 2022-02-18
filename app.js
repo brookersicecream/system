@@ -52,7 +52,7 @@ const authenticated_menu=[
         {label:"Toppings",function:"navigate({fn:'inventory',params:{style:'update',list:'Toppings'}})"},
         {label:"Disposables",function:"navigate({fn:'inventory',params:{style:'update',list:'Disposables'}})"},
         {label:"Cleaning",function:"navigate({fn:'inventory',params:{style:'update',list:'Cleaning'}})"},
-        {label:"Inclusion Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Inclusion Ingredients',stores:[stores['Vineyard']]}})"},
+        {label:"Inclusion Ingredients",function:"navigate({fn:'inventory',params:{style:'update',list:'Inclusion Ingredients',stores:[app_data.stores['Vineyard']]}})"},
     ]},
 
     {label:"Inventory Summary",id:"summary_menu", roles:["general manager","administrator"],  menu:[
@@ -237,7 +237,7 @@ async function inventory(params){
             console.log("params.stores",params.stores)
             for(store of user_data.store){
                 if(!params.stores || intersect(params.stores,store).length>0){
-                  html.push(`<option value="${store}">${stores[store]}</option>`)
+                  html.push(`<option value="${store}">${app_data.stores[store]}</option>`)
                 }
             }
             //When the user selects the store using the form, the "get_inventory_list" function is invoked on the submission of the form to populate the rest of this page with the data for that store
@@ -245,7 +245,6 @@ async function inventory(params){
                         <button type="button" id="choose_store_button" onclick="inventory(form_data(this,true))">Submit</button>
                         <input type="hidden" name="mode" value="get_inventory_list">
                         <input type="hidden" name="list" value="${params.list}">
-                        <input type="hidden" name="filter" value="list='${params.list}'">
                         </form>`)
             tag("inventory_panel").innerHTML=html.join("")
           }
@@ -277,7 +276,7 @@ async function inventory(params){
                     <tr>
                     <th class="sticky">Item</th>
                     `]
-                for(const store of store_sequence){
+                for(const store of app_data.store_sequence){
                     html.push(`<th class="sticky">${store}</th>`)
 
                 }   
@@ -292,7 +291,7 @@ async function inventory(params){
                     //add a new table row to the table for each flavor
                     if(record.fields.category !== category){
                         // place the category header
-                        html.push(`<tr><th style="background-color:khaki" colspan=${store_sequence.length+2}>${record.fields.category}</th></tr>`)
+                        html.push(`<tr><th style="background-color:khaki" colspan=${app_data.store_sequence.length+2}>${record.fields.category}</th></tr>`)
                         category=record.fields.category
 
                     }
@@ -301,13 +300,13 @@ async function inventory(params){
                     html.push(`<td class="active" style="text-align:left">${record.fields.name}</td>`)
                     //create empty cells in the table for the inventory counts. Notice that the ID for the empty cell is set to be a combination of the id for the flavor (record.id) and the store (stores[store]) corresponding to the column. This way the table can be populated with the correct data in the correct cells.
                     
-                    for(store of store_sequence){
-                        console.log(stores[store], record.fields.store,record.fields.name)
+                    for(store of app_data.store_sequence){
+                        console.log(app_data.stores[store], record.fields.store,record.fields.name)
                         let active="active"
-                        if(intersect(stores[store], record.fields.store).length===0){
+                        if(intersect(app_data.stores[store], record.fields.store).length===0){
                             active="disabled"
                         }
-                        html.push(`<td class="${active} right" id="${record.id}|${stores[store]}"></td>`)
+                        html.push(`<td class="${active} right" id="${record.id}|${app_data.stores[store]}"></td>`)
                     }
                     //The totals will be calculated. The id is set to a combination of the flavor id and "total" so that the appropriate totals can be placed correctly in the table. 
                     html.push(`<td class="active right" id="${record.id}|total"></td>`)
@@ -361,7 +360,7 @@ async function inventory(params){
                 // keep track of navigation
                 console.log("response", response)
                 // build the HTML header for the page identifying the store for which the counts will be recorded
-                tag("inventory-title").innerHTML=`<h2>${stores[params.store]} ${response.list.records[0].fields.list} Inventory</h2>`
+                tag("inventory-title").innerHTML=`<h2>${app_data.stores[params.store]} ${app_data.inventory_lists[response.list.records[0].fields.list]} Inventory</h2>`
 
                 const html=['<table class="inventory-table">']
                 
@@ -369,14 +368,15 @@ async function inventory(params){
                 item_data={}// arrange data for easy placing on HTML form
                 // organize the data before trying to write HTML
                 for(record of response.list.records){
-                    if(!item_data[record.fields.category]){
-                        item_data[record.fields.category]={}
+                    if(!item_data[record.fields.category[0]]){
+                        item_data[record.fields.category[0]]={}
                     }
-                    item_data[record.fields.category][record.fields.name]=[]
+                    item_data[record.fields.category[0]][record.fields.inventory_item[0]]=[]
                     for(const container of record.fields.container){
-                        item_data[record.fields.category][record.fields.name].push({
+                        console.log(record.fields.category[0],item_data[record.fields.category[0]])
+                        item_data[record.fields.category[0]][record.fields.inventory_item[0]].push({
                             container:container,
-                            id:record.id + "|" + container.replace(/\s/g,"_")
+                            id:record.id + "|" + container
                         })
                     }
                 }
@@ -385,12 +385,12 @@ async function inventory(params){
                 console.log("entries",Object.keys(item_data))
          
                 for(const [category, items] of Object.entries(item_data)){
-                    html.push(`<tr><th style="background-color:khaki" colspan="3">${category}</th></tr>`)
+                    html.push(`<tr><th style="background-color:khaki" colspan="3">${app_data.inventory_categories[category]}</th></tr>`)
                     for(const [item,containers] of Object.entries(items)){
-                        html.push(`<tr><td  class="inactive" rowspan="${containers.length}">${item}</td>`)
+                        html.push(`<tr><td  class="inactive" rowspan="${containers.length}">${app_data.inventory_items[item]}</td>`)
                         for(const cont of containers){
                             const container = cont.container
-                            html.push(`<td class="inactive">${container}</td>`)
+                            html.push(`<td class="inactive">${app_data.inventory_containers[container]}</td>`)
                             html.push(`<td class="active"><input id="${cont.id}" data-store="${params.store}" data-item_id="${cont.id.split("|")[0]}" data-container="${container}" type="text" onchange="update_observation(this)"></td>`)                            
                             html.push("</tr>")
                             html.push("<tr>")
@@ -404,7 +404,11 @@ async function inventory(params){
                 //find the cells for entering serving conainers
                 for(record of response.list.records){
                     for(container of record.fields.container){
-                        if(container==="Serving Container"){
+                        console.log("app_data.inventory_containers[container]",app_data.inventory_containers[container].substr(0,7),app_data.inventory_containers[container].substr(0,7)==="Opened ")
+                        if(app_data.inventory_containers[container]==="Serving Container" || 
+                           app_data.inventory_containers[container].substr(0,7)==="Opened "){
+                               console.log("in if", record.id,container)
+                               
                             add_buttons(record.id,container)
                         }
                     }
@@ -431,7 +435,7 @@ async function inventory(params){
                 // To the extent that observations may already exist for a flavor in that location in that store, they will be populated on the table. Changes to these values will also be updated.
                 if(response.data.records){
                     for(record of response.data.records){
-                        const box=tag(record.fields.item[0] + "|" + record.fields.container.replace(/\s/g,"_"))
+                        const box=tag(record.fields.item[0] + "|" + record.fields.container[0])
                         box.dataset.obs_id=record.id
                         box.value=record.fields.quantity
                         for(const div of getAllSiblings(box)){
@@ -447,6 +451,29 @@ async function inventory(params){
                 }
                 
             } 
+            
+            tag("inventory_panel").addEventListener("focusin", function(event) {
+                event.target.select()
+                if(event.target.value){return}
+                event.target.value=0
+                event.target.select()
+                console.log("value", event.target.id)
+                event.target.dataset.first_edit=true
+                event.stopPropagation()
+            });                
+            tag("inventory_panel").addEventListener("focusout", function(event) {
+                console.log(event.target.dataset.first_edit)
+                if(event.target.dataset.first_edit==="true"){
+                    //need to save the data
+                    event.target.dataset.first_edit=false
+                    update_observation(event.target)
+                }
+                
+            });       
+
+            
+
+
         }else{//This executes if the data needed to create the form or report is not retrieved successfully. It is essentially an error message to the user.
             tag("inventory_panel").innerHTML="Unable to get inventory list: " + response.message.message + "."
         }
@@ -502,13 +529,13 @@ async function ice_cream_inventory(params){
             //If the user wants to record an inventory count, we build a form to have the user select the store they wish to work with.
             const html=['<form>Store: <select name="store">']
             for(store of user_data.store){
-                html.push(`<option value="${store}">${stores[store]}</option>`)
+                html.push(`<option value="${store}">${app_data.stores[store]}</option>`)
             }
             //When the user selects the store using the form, the "get_inventory_list" function is invoked on the submission of the form to populate the rest of this page with the data for that store
             html.push(`</select>
                         <button type="button" id="choose_store_button" onclick="ice_cream_inventory(form_data(this,true))">Submit</button>
                         <input type="hidden" name="mode" value="get_inventory_list">
-                        <input type="hidden" name="filter" value="list='Ice Cream'">
+                        <input type="hidden" name="list" value="Ice Cream">
                         </form>`)
             tag("inventory_panel").innerHTML=html.join("")
           }
@@ -540,7 +567,7 @@ async function ice_cream_inventory(params){
                     <tr>
                     <th class="sticky">Flavor</th>
                     `]
-                for(const store of store_sequence){
+                for(const store of app_data.store_sequence){
                     header.push(`<th class="sticky">${store}</th>`)
 
                 }   
@@ -554,16 +581,16 @@ async function ice_cream_inventory(params){
                 //processing the data to fit in the table
                 for(record of response.list.records){
                     let target=html
-                    if(record.fields.category!=="Regular"){
+                    if(app_data.inventory_categories[record.fields.category]!=="Regular"){
                         target=irregular
                     }
                     //add a new table row to the table for each flavor
                     target.push("<tr>")
                     //insert the flavor name (record.field.name)
-                    target.push(`<td class="active">${record.fields.name}</td>`)
+                    target.push(`<td class="active">${app_data.inventory_items[record.fields.inventory_item]}</td>`)
                     //create empty cells in the table for the inventory counts. Notice that the ID for the empty cell is set to be a combination of the id for the flavor (record.id) and the store (stores[store]) corresponding to the column. This way the table can be populated with the correct data in the correct cells.
-                    for(store of store_sequence){
-                        target.push(`<td class="active right" id="${record.id}|${stores[store]}"></td>`)
+                    for(store of app_data.store_sequence){
+                        target.push(`<td class="active right" id="${record.id}|${app_data.stores[store]}"></td>`)
                     }
                     //The totals will be calculated. The id is set to a combination of the flavor id and "total" so that the appropriate totals can be placed correctly in the table. 
                     target.push(`<td class="active right" id="${record.id}|total"></td>`)
@@ -620,7 +647,7 @@ async function ice_cream_inventory(params){
                 window.cols={}
                 console.log("response", response)
                 // build the HTML header for the page identifying the store for which the counts will be recorded
-                tag("inventory-title").innerHTML=`<h2>${stores[params.store]} Ice Cream Inventory</h2>`
+                tag("inventory-title").innerHTML=`<h2>${app_data.stores[params.store]} Ice Cream Inventory</h2>`
                 const html=["Fill in every row in this section."]
                 //build the table for the form used to record the counts.
                 const header=[`
@@ -634,8 +661,8 @@ async function ice_cream_inventory(params){
                 for(container of response.list.records[0].fields.container){
                     window.cols[p]=container
                     window.cols[container]=p++
-                    let cont=container
-                    if(cont==="Walk-in Freezers" && stores[params.store]==="Vineyard"){
+                    let cont=app_data.inventory_containers[container]
+                    if(cont==="Walk-in Freezers" && app_data.stores[params.store]==="Vineyard"){
                         cont=cont + " &amp;<br>Hardening Cabinets"
                     }
                     console.log("container",container)
@@ -653,12 +680,12 @@ async function ice_cream_inventory(params){
 
                     //build the rest of the table for all of the regular ice cream items
                     let target=html
-                    if(record.fields.category!=="Regular"){
+                    if(app_data.inventory_categories[record.fields.category]!=="Regular"){
                         target=irregular
                     }
                     //add a row for each flavor (record.field.name)
                     target.push("<tr>")
-                    target.push(`<th>${record.fields.name}</th>`)
+                    target.push(`<th>${app_data.inventory_items[record.fields.inventory_item]}</th>`)
                     //build a text input in each cell. Use the combination of the flavor and container ids as the identifier of the input so that we can use it to update the correct record. When a value in the input is change (onchange), the update_observation function is called and passed the value and information needed (store, flavor, and container) to add the observation to the database. update_observation is a function in Amazon App Script.
                     for(container of record.fields.container){
                         target.push(`<td class="active col-${window.cols[container]}"><input id="${record.id}|${container.replace(/\s/g,"_")}" data-store="${params.store}" data-item_id="${record.id}" data-container="${container}" type="text" onchange="update_observation(this)"></td>`)
@@ -677,7 +704,7 @@ async function ice_cream_inventory(params){
                 //find the cells for entering serving conainers
                 for(record of response.list.records){
                     for(container of record.fields.container){
-                        if(container==="Dipping Cabinet"){
+                        if(container===app_data.inventory_containers["Dipping Cabinet"]){
                             add_buttons(record.id,container)
                         }
                     }
@@ -698,7 +725,7 @@ async function ice_cream_inventory(params){
                 // To the extent that observations may already exist for a flavor in that location in that store, they will be populated on the table. Changes to these values will also be updated.
                 if(response.data.records){
                     for(record of response.data.records){
-                        const box=tag(record.fields.item[0] + "|" + record.fields.container.replace(/\s/g,"_"))
+                        const box=tag(record.fields.item[0] + "|" + record.fields.container[0])
                         box.dataset.obs_id=record.id
                         box.value=record.fields.quantity
                         for(const div of getAllSiblings(box)){
@@ -726,6 +753,24 @@ async function ice_cream_inventory(params){
                       move_down(event.target);
                     }
                 });                
+                tag("inventory_panel").addEventListener("focusin", function(event) {
+                    event.target.select()
+                    if(event.target.value){return}
+                    event.target.value=0
+                    event.target.select()
+                    console.log("value", event.target.id)
+                    event.target.dataset.first_edit=true
+                    event.stopPropagation()
+                });                
+                tag("inventory_panel").addEventListener("focusout", function(event) {
+                    console.log(event.target.dataset.first_edit)
+                    if(event.target.dataset.first_edit==="true"){
+                        //need to save the data
+                        event.target.dataset.first_edit=false                        
+                        update_observation(event.target)
+                    }
+                    
+                });       
 
 
                 
@@ -772,7 +817,8 @@ function add_buttons(item_id, container){
     //this function is used to create the input buttons for recording the inventory observations. Notice that we only use the options for case 3. We might use the other options in the future.
     const box = tag(item_id + "|" + container.replace(/\s/g,"_"))    
     const cell = box.parentElement
-    switch(container){
+    //console.log("adding buttons",item_id, container)
+    switch(app_data.inventory_containers[container]){
         case "Serving Container":
             box.style.display="none"
             cell.appendChild(get_div_button(box,"20%",0,"0"))
@@ -820,7 +866,6 @@ function get_div_button(box,width,value,label){
                 if(div.tagName==="DIV"){
                     div.style.backgroundColor="transparent"
                     div.style.color="lightGray"
-                    console.log(div)
                 }
             }
             this.style.backgroundColor="lightGray"
@@ -852,6 +897,7 @@ function getAllSiblings(elem, filter) {
 
 function move_down(source){
     // aids in navigation. selects the next cell below when a value is updated
+    //console.log("move_down",source)
     const ids=source.id.split("|")
     ids[1]=ids[1].replace(/_/g," ")
     
@@ -882,6 +928,7 @@ function flavor_total(flavor_id){
 async function update_observation(entry){
     //this is the function that is called to update an observation when the value is change in the input form.
     //console.log(entry.parentElement)
+    if(entry.value.length===0){return}//blank value
     if(!logged_in()){show_home();return}//If the user logs out, not updates are permitted.
     // add data validation. If a values that is not a number has been entered, the cell is highlighted in gray and an error message is presented to the user. No update will be made.
     if(isNaN(entry.value)){
@@ -943,7 +990,7 @@ async function update_observation(entry){
     }else{
         // there is no record for this item, insert it using the "insert_inventory_count" function in google app script
         params.mode="insert_inventory_count"
-        params.list=window.list
+        params.list=app_data.inventory_lists[window.list]
         console.log("inserting")
         const response=await post_data(params)    
         console.log("insert response", response)
