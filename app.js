@@ -332,8 +332,8 @@ async function inventory(params){
                         //Since the data is ordered by date, if we have already found an observation for an item/store/containter combination, any additional obeservations are skipped.
 
                         if(!data[id]){
-                            
                             // scale a nonstandard size to a standard size
+                            const factor_id=record.fields.inventory_item[0] + "_" + record.fields.container[0]
                             let factor=app_data.inventory_conversion[factor_id]
                             if(!factor){factor=1}
                             data[id]={quantity:factor*record.fields.quantity,date:record.fields.date}
