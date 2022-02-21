@@ -183,6 +183,70 @@ async function archive_inventory(){
     
 }
 
+async function close_inventory(record_id){
+
+    // check to see if we have un-marked inventory items
+    const missing=document.getElementsByClassName("active").length
+    let message_text 
+    if(missing>0){
+
+        if (missing===1){
+            message_text = `You are missing ${missing} entry.  Please complete it prior to submitting.`
+        }else{
+            message_text = `You are missing ${missing} entries.  Please complete them prior to submitting.`
+        }
+        
+        message({
+            message:message_text,
+            title:"Not Ready to Close",
+            kind:"error",
+            seconds:8    
+        })
+        return
+    }
+
+
+    const params={
+        mode:"close_inventory",
+        record_id: record_id
+    }
+
+    const response=await post_data(params)
+
+    if(response.status==="success"){
+        tag("inventory-header").innerHTML="This inventory is marked as complete."
+    }
+}
+
+function display_status(response){
+    console.log("response", response)
+    tag("inventory-header").style.padding="1rem 0 1rem 0"
+    switch(response.condition){
+        case "closed":
+            tag("inventory-header").innerHTML="This inventory is marked as complete."
+            break
+        default:
+            tag("inventory-header").innerHTML=`This inventory is in progress. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+    }
+    
+    let message_text
+    switch(response.condition){
+        case "closed":
+            message_text="Working on a closed inventory."
+            break
+        case "open":
+            message_text="This inventory is already underway."
+            break
+        default:
+            message_text="Starting a new inventory."    
+    }
+
+    message({
+        message:message_text,
+        title:"Inventory Message",
+        seconds:3
+    })
+}
 
 async function inventory(params){
     //this function is used both the record inventory counts and to build a summary report. The "style" property of the params sent to the function determines whether the function is in "count" mode or "summary" mode. Also, if the user has access to multiple stores, they will be presented with the option to select the store they wish to work with.
@@ -201,6 +265,7 @@ async function inventory(params){
             <div class="page">
                 <div id="inventory-title" style="text-align:center"><h2>${params.list} Inventory</h2></div>
                 <div id="inventory-message" style="width:100%"></div>
+                <div id="inventory-header" style="width:100%"></div>
                 <div id="inventory_panel"  style="width:100%">
                 </div>
             </div>  
@@ -229,6 +294,7 @@ async function inventory(params){
           if(params.style==='summary'){
               //If the user wants to see a summary of the most recent count, we call the "get_inventory_list" function to populate the page with data from all of the stores that are associated with that user.
             tag("inventory-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'
+            console.log("===========================================")
             inventory({
                 mode:"get_inventory_list",
                 list:params.list,
@@ -248,6 +314,7 @@ async function inventory(params){
             html.push(`</select>
                         <button type="button" id="choose_store_button" onclick="inventory(form_data(this,true))">Submit</button>
                         <input type="hidden" name="mode" value="get_inventory_list">
+                        <input type="hidden" name="report_style" value="${params.style}">
                         <input type="hidden" name="list" value="${params.list}">
                         </form>`)
             tag("inventory_panel").innerHTML=html.join("")
@@ -256,8 +323,20 @@ async function inventory(params){
 
     }else if(params.store){    
         //Notice that the first time through the store property is undefined and is set when the user data is loaded. Therefore this code will only process the second time through once the store property is set. During this pass, we determine whether to display the report of the last recorded inventory or display the form for recording a new inventory count.
-        console.log(" inventory params=store")
+        console.log(" inventory params=store", params)
         //we use a call to the "post_data" function to use Google App Script to retrieve the data needed to processs the form or the report
+
+        if(params.report_style==='update'){
+            // record the inventory as being in progress
+            post_data({
+                mode:"start_inventory",
+                store:params.store,
+                list:app_data.inventory_lists[params.list]
+                },
+                display_status
+            )
+        }
+
         const response=await post_data(params)
         tag("inventory-message").innerHTML=''
 
@@ -367,6 +446,9 @@ async function inventory(params){
                 
             }else{
             //this is generating the form for updating inventory counts in an individual store
+            
+
+
                 // keep track of navigation
                 console.log("response", response)
                 // build the HTML header for the page identifying the store for which the counts will be recorded
@@ -500,6 +582,7 @@ async function ice_cream_inventory(params){
         tag("canvas").innerHTML=` 
             <div class="page">
                 <div id="inventory-title" style="text-align:center"><h2>Ice Cream Inventory</h2></div>
+                <div id="inventory-header" style="width:100%"></div>
                 <div id="inventory-message" style="width:100%"></div>
                 <div id="inventory_panel"  style="width:100%">
                 </div>

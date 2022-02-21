@@ -4,31 +4,44 @@ const base=window.location.protocol + "//" + window.location.host + "/"
 
 
 
-async function post_data(payload){
+async function post_data(payload, callback){
+    
     //This function is used to invoke a function in Google App Script to interact with Airtable. This is desireable so that we can isolate the information needed to interact with the data from the client browser.
-    working()//This function is used to present a visual cue to the user that the site is performing an update.
+
+    //if a callback is not provided  this function waits until the call is complete
+
+
     if(document.cookie){//cookies are used to manage authenticated user information. The cookies are sent to Google App Script to ensure that users have appropriate authication and credentials update the database.
       payload.cookie=document.cookie
     }
     console.log("const payload=`" + JSON.stringify(payload) + "`")//This is primarily useful for troubleshooting. The data passed to Google App Script is sent to the console.
     //The request for Google App Script is formatted.
-    const reply = await fetch(gas_end_point, { 
+    const options = { 
         method: "POST", 
         body: JSON.stringify(payload),
-    })
-    //The request is made of Google App Script and the response is set to "response"
-    const response = await reply.json()
-    working(false)
-    console.log("in post data", response)     
-
-    if(response.cookie){// if respoonse has a cookie, set it
-        for(const entry of response.cookie){
-            console.log("cookie returned",entry.name,"=",entry.data)
-            set_cookie(entry.name,entry.data,response.cookie_days)
-        }
     }
-    //the response from google app script is returned.
-    return response
+
+    if(callback){// execute the requst and let callback handle the response
+        fetch(gas_end_point, options)
+        .then(response => response.json())
+        .then(callback);
+    }else{ //execute the request and wait for the response so it can be returned
+        working()//This function is used to present a visual cue to the user that the site is performing an update.
+        const reply = await fetch(gas_end_point, options)
+        //The request is made of Google App Script and the response is set to "response"
+        const response = await reply.json()
+        working(false)
+        console.log("in post data", response)     
+
+        if(response.cookie){// if respoonse has a cookie, set it
+            for(const entry of response.cookie){
+                console.log("cookie returned",entry.name,"=",entry.data)
+                set_cookie(entry.name,entry.data,response.cookie_days)
+            }
+        }
+        //the response from google app script is returned.
+        return response
+    }
 }
 
 
