@@ -429,16 +429,17 @@ async function inventory(params){
                         const box = tag(ids[0]+"|"+ids[1])
                         
                         //There will be more than one current observation for a flavor in each store, so we need to total these observations by store. To do this, if there is not currently a value in the table for flavor/store, it is added. If there is an observation, the new observation is added to the one that is currently there (running total logic).
+                        const qty=Math.round(value.quantity*10)/10
                         if(box.innerHTML===""){
-                            box.innerHTML=value.quantity
+                            box.innerHTML=qty
                         }else{
-                            box.innerHTML=parseFloat(box.innerHTML)+value.quantity
+                            box.innerHTML=parseFloat(box.innerHTML)+qty
                         }
                         //similar logic is used to build running totals for the grand total column.
                         if(total_box.innerHTML===""){
-                            total_box.innerHTML=value.quantity
+                            total_box.innerHTML=qty
                         }else{
-                            total_box.innerHTML=parseFloat(total_box.innerHTML)+value.quantity
+                            total_box.innerHTML=parseFloat(total_box.innerHTML)+qty
                         }
   
                     }
