@@ -622,6 +622,7 @@ async function ice_cream_inventory(params){
             html.push(`</select>
                         <button type="button" id="choose_store_button" onclick="ice_cream_inventory(form_data(this,true))">Submit</button>
                         <input type="hidden" name="mode" value="get_inventory_list">
+                        <input type="hidden" name="report_style" value="${params.style}">
                         <input type="hidden" name="list" value="Ice Cream">
                         </form>`)
             tag("inventory_panel").innerHTML=html.join("")
@@ -632,6 +633,20 @@ async function ice_cream_inventory(params){
         //Notice that the first time through the store property is undefined and is set when the user data is loaded. Therefore this code will only process the second time through once the store property is set. During this pass, we determine whether to display the report of the last recorded inventory or display the form for recording a new inventory count.
         console.log("at ice_cream_inventory params=store")
         //we use a call to the "post_data" function to use Google App Script to retrieve the data needed to processs the form or the report
+
+        if(params.report_style==='update'){
+            // record the inventory as being in progress
+            post_data({
+                mode:"start_inventory",
+                store:params.store,
+                list:app_data.inventory_lists[params.list]
+                },
+                display_status
+            )
+        }
+
+
+
         const response=await post_data(params)
         tag("inventory-message").innerHTML=''
 
@@ -739,7 +754,8 @@ async function ice_cream_inventory(params){
                 console.log("response", response)
                 // build the HTML header for the page identifying the store for which the counts will be recorded
                 tag("inventory-title").innerHTML=`<h2>${app_data.stores[params.store]} Ice Cream Inventory</h2>`
-                const html=["Fill in every row in this section."]
+                //const html=["Fill in every row in this section."]
+                const html=[]
                 //build the table for the form used to record the counts.
                 const header=[`
                 <table class="inventory-table">
@@ -785,7 +801,8 @@ async function ice_cream_inventory(params){
                 }     
                 html.push("</table>")
                 //add form to collect observations for the irregular items
-                html.push("<br>In this section, fill in only the rows corresponding to flavors you have on hand.")
+                //html.push("<br>In this section, fill in only the rows corresponding to flavors you have on hand.")
+                html.push("<br>Seasonal Flavors")
                 html.push(header.join(""))
                 html.push(irregular.join(""))
                 html.push("</table>")
