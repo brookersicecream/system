@@ -195,13 +195,14 @@ async function close_inventory(record_id){
         }else{
             message_text = `You are missing ${missing} entries.  Please complete them prior to submitting.`
         }
-        
+
         message({
             message:message_text,
             title:"Not Ready to Close",
             kind:"error",
             seconds:8    
         })
+
         return
     }
 
@@ -210,7 +211,11 @@ async function close_inventory(record_id){
         mode:"close_inventory",
         record_id: record_id
     }
-
+    const note=tag("inventory-note")
+    if(note.value){
+        params.note = note.value
+    }
+    console.log("about to save note", params)
     const response=await post_data(params)
 
     if(response.status==="success"){
@@ -224,9 +229,17 @@ function display_status(response){
     switch(response.condition){
         case "closed":
             tag("inventory-header").innerHTML="This inventory is marked as complete."
+            if(response.note){
+                tag("inventory-footer").innerHTML=response.note
+            }
+            break
+        case "open":
+            tag("inventory-header").innerHTML=`This inventory is already underway. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+            tag("inventory-footer").innerHTML=`<textarea style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above." id="inventory-note">${response.note || ""}</textarea>`
             break
         default:
-            tag("inventory-header").innerHTML=`This inventory is in progress. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+            tag("inventory-header").innerHTML=`You just started this inventory. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+            tag("inventory-footer").innerHTML=`<textarea style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above." id="inventory-note"></textarea>`
     }
     
     let message_text
@@ -248,6 +261,23 @@ function display_status(response){
     })
 }
 
+
+function display_notes(response){
+    const html=[]
+    for(record of response.records){
+        console.log("response------->", record)
+        html.push(`<div>${record.fields.employee} (${app_data.stores[record.fields.store[0]]}):<br>${record.fields.note}</div>`)
+    }
+    tag("inventory-footer").innerHTML=html.join("<hr>")
+}
+
+
+function round(number,digits){
+    const divisor=10**(digits)
+    return Math.round(number*divisor)/divisor
+}
+
+
 async function inventory(params){
     //this function is used both the record inventory counts and to build a summary report. The "style" property of the params sent to the function determines whether the function is in "count" mode or "summary" mode. Also, if the user has access to multiple stores, they will be presented with the option to select the store they wish to work with.
 
@@ -266,8 +296,8 @@ async function inventory(params){
                 <div id="inventory-title" style="text-align:center"><h2>${params.list} Inventory</h2></div>
                 <div id="inventory-message" style="width:100%"></div>
                 <div id="inventory-header" style="width:100%"></div>
-                <div id="inventory_panel"  style="width:100%">
-                </div>
+                <div id="inventory_panel"  style="width:100%"></div>
+                <div id="inventory-footer" style="width:100%; padding-top:1rem"></div>
             </div>  
         `
         //loading user data. Any user can record an inventory count, so we don't need to check their role at this point. If a user is associated with more than one store and they wish to record an inventory count, they will be prompted to select the store they want to work with.
@@ -335,6 +365,14 @@ async function inventory(params){
                 },
                 display_status
             )
+        }else{
+            console.log("================")
+            post_data({
+                mode:"inventory_summary",
+                list:app_data.inventory_lists[params.list]
+                },
+                display_notes
+            )
         }
 
         const response=await post_data(params)
@@ -366,9 +404,50 @@ async function inventory(params){
 
                 html.push(`<th class="sticky">Total</th>`)
                 html.push("</tr>")
+                html.push(`<tr><th style="background-color:khaki" colspan=${app_data.store_sequence.length+2}>Observation Counts</th></tr>`)
+
+                // find the most recent numbers for each store
+                const data={}
+                const date_list=[]
+                if(response.data.records){
+                    //process through each available data item
+                    for(record of response.data.records){
+                        //identity the flavor/store combination for each observation
+                        const id = record.fields.item[0] + "|" + record.fields.store[0] + "|" + record.fields.container[0]
+                        
+                        //Since the data is ordered by date, if we have already found an observation for an item/store/containter combination, any additional obeservations are skipped.
+                        if(!data[id]){
+                            // scale a nonstandard size to a standard size
+                            const factor_id=record.fields.inventory_item[0] + "_" + record.fields.container[0]
+                            let factor=app_data.inventory_conversion[factor_id]
+                            if(!factor){factor=1}
+                            data[id]={quantity:factor*record.fields.quantity,date:record.fields.date}
+                            if(!date_list.includes(record.fields.date)){
+                                date_list.push(record.fields.date)
+                            }
+                        }
+                    }
+                }
+                const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+                // put in the date rows
+                for(const obs_date of date_list){
+                    html.push("<tr>")
+                    const day=new Date(obs_date + "T00:00:00.000-07:00");
+                    //console.log("day===============>>>>>>>>>>>>", day)
+                    html.push(`<td class="active" style="text-align:left">${weekday[day.getDay()]} (${day.getMonth()+1}/${day.getDate()})</td>`)
+                    for(store of app_data.store_sequence){
+                        let active="active"
+                        // if(intersect(app_data.stores[store], record.fields.store).length===0){
+                        //     active="disabled"
+                        // }
+                        html.push(`<td class="${active} right" id="${obs_date}|${app_data.stores[store]}"></td>`)
+                    }
+                    html.push(`<td class="active right" id="${obs_date}|total"></td>`)
+                    html.push("</tr>")
+                }
 
                 let category=""
-
+                
                 //processing the data to fit in the table
                 for(record of response.list.records){
                     //add a new table row to the table for each flavor
@@ -400,24 +479,23 @@ async function inventory(params){
                 tag("inventory_panel").innerHTML=html.join("")
 
 
-                // find the most recent numbers for each store
-                const data={}
+
                 //if there is data to display, proceed
                 if(response.data.records){
                     //process through each available data item
-                    for(record of response.data.records){
-                        //identity the flavor/store combination for each observation
-                        const id = record.fields.item[0] + "|" + record.fields.store[0] + "|" + record.fields.container[0]
-                        //Since the data is ordered by date, if we have already found an observation for an item/store/containter combination, any additional obeservations are skipped.
-
-                        if(!data[id]){
-                            // scale a nonstandard size to a standard size
-                            const factor_id=record.fields.inventory_item[0] + "_" + record.fields.container[0]
-                            let factor=app_data.inventory_conversion[factor_id]
-                            if(!factor){factor=1}
-                            data[id]={quantity:factor*record.fields.quantity,date:record.fields.date}
-                        }
-                    }
+                    // for(record of response.data.records){
+                    //     //identity the flavor/store combination for each observation
+                    //     const id = record.fields.item[0] + "|" + record.fields.store[0] + "|" + record.fields.container[0]
+                        
+                    //     //Since the data is ordered by date, if we have already found an observation for an item/store/containter combination, any additional obeservations are skipped.
+                    //     if(!data[id]){
+                    //         // scale a nonstandard size to a standard size
+                    //         const factor_id=record.fields.inventory_item[0] + "_" + record.fields.container[0]
+                    //         let factor=app_data.inventory_conversion[factor_id]
+                    //         if(!factor){factor=1}
+                    //         data[id]={quantity:factor*record.fields.quantity,date:record.fields.date}
+                    //     }
+                    // }
     
                     console.log("data-->",data)
 
@@ -427,19 +505,33 @@ async function inventory(params){
                         const ids=key.split("|")
                         const total_box = tag(ids[0] + "|total")
                         const box = tag(ids[0]+"|"+ids[1])
+                        const date_box = tag(value.date+"|"+ids[1])
+                        const date_box_total = tag(value.date+"|total")
+                        if(date_box.innerHTML===""){
+                            date_box.innerHTML=1
+                        }else{
+                            date_box.innerHTML=parseInt(date_box.innerHTML) + 1
+                        }
+                        if(date_box_total.innerHTML===""){
+                            date_box_total.innerHTML=1
+                        }else{
+                            date_box_total.innerHTML=parseInt(date_box_total.innerHTML) + 1
+                        }
+
+                        
                         
                         //There will be more than one current observation for a flavor in each store, so we need to total these observations by store. To do this, if there is not currently a value in the table for flavor/store, it is added. If there is an observation, the new observation is added to the one that is currently there (running total logic).
-                        const qty=Math.round(value.quantity*10)/10
+                        const qty=round(value.quantity,1)
                         if(box.innerHTML===""){
                             box.innerHTML=qty
                         }else{
-                            box.innerHTML=parseFloat(box.innerHTML)+qty
+                            box.innerHTML=round(parseFloat(box.innerHTML)+qty,1)
                         }
                         //similar logic is used to build running totals for the grand total column.
                         if(total_box.innerHTML===""){
                             total_box.innerHTML=qty
                         }else{
-                            total_box.innerHTML=parseFloat(total_box.innerHTML)+qty
+                            total_box.innerHTML=round(parseFloat(total_box.innerHTML)+qty,1)
                         }
   
                     }
@@ -540,13 +632,16 @@ async function inventory(params){
             } 
             
             tag("inventory_panel").addEventListener("focusin", function(event) {
-                event.target.select()
-                if(event.target.value){return}
-                event.target.value=0
-                event.target.select()
-                console.log("value", event.target.id)
-                event.target.dataset.first_edit=true
-                event.stopPropagation()
+                console.log(event.target.tagName)
+                if(event.target.tagName==="INPUT"){
+                    event.target.select()
+                    if(event.target.value){return}
+                    event.target.value=0
+                    event.target.select()
+                    console.log("value", event.target.id)
+                    event.target.dataset.first_edit=true
+                    event.stopPropagation()
+                }
             });                
             tag("inventory_panel").addEventListener("focusout", function(event) {
                 console.log(event.target.dataset.first_edit)
@@ -585,8 +680,8 @@ async function ice_cream_inventory(params){
                 <div id="inventory-title" style="text-align:center"><h2>Ice Cream Inventory</h2></div>
                 <div id="inventory-header" style="width:100%"></div>
                 <div id="inventory-message" style="width:100%"></div>
-                <div id="inventory_panel"  style="width:100%">
-                </div>
+                <div id="inventory_panel"  style="width:100%"></div>
+                <div id="inventory-footer" style="width:100%; padding-top:1rem"></div>
             </div>  
         `
         //loading user data. Any user can record an inventory count, so we don't need to check their role at this point. If a user is associated with more than one store and they wish to record an inventory count, they will be prompted to select the store they want to work with.
@@ -731,17 +826,20 @@ async function ice_cream_inventory(params){
                         const total_box = tag(ids[0] + "|total")
                         const box = tag(ids[0]+"|"+ids[1])
 
+
+                        const qty=Math.round(value.quantity*10)/10
+
                         //There will be more than one current observation for a flavor in each store, so we need to total these observations by store. To do this, if there is not currently a value in the table for flavor/store, it is added. If there is an observation, the new observation is added to the one that is currently there (running total logic).
                         if(box.innerHTML===""){
-                            box.innerHTML=value.quantity
+                            box.innerHTML=qty
                         }else{
-                            box.innerHTML=parseFloat(box.innerHTML)+value.quantity
+                            box.innerHTML=parseFloat(box.innerHTML)+qty
                         }
                         //similar logic is used to build running totals for the grand total column.
                         if(total_box.innerHTML===""){
-                            total_box.innerHTML=value.quantity
+                            total_box.innerHTML=qty
                         }else{
-                            total_box.innerHTML=parseFloat(total_box.innerHTML)+value.quantity
+                            total_box.innerHTML=parseFloat(total_box.innerHTML)+qty
                         }
   
                     }
