@@ -294,6 +294,7 @@ function display_notes(response){
             notes.push(`${note.employee} (${app_data.stores[record.fields.store]}):`)
             notes.push(note.text)
             notes.push("")
+            notes.push("")
         }
 
         //html.push(`<div>${record.fields.employee} (${app_data.stores[record.fields.store[0]]}):<br>${record.fields.note}</div>`)
@@ -809,7 +810,6 @@ async function ice_cream_inventory(params){
 
                 }   
 
-                html.push(`<th>Total</th>`)
                 html.push("</tr></table><br>")
 
 
@@ -897,13 +897,13 @@ async function ice_cream_inventory(params){
                                 cell.id=value.date +"_"+ app_data.stores[app_data.store_sequence[s]]
                                 cell.className="active right"
                             }   
-                            cell = row.insertCell(s+1)
-                            cell.id=value.date +"_total"
-                            cell.className="active right"
+                            // cell = row.insertCell(s+1)
+                            // cell.id=value.date +"_total"
+                            // cell.className="active right"
                             
                         }
 
-                        const count_total_box = tag(value.date +"_total")
+                        // const count_total_box = tag(value.date +"_total")
                         const count_box = tag(value.date +"_"+ids[1])
 
                         if(count_box.innerHTML===""){
@@ -911,12 +911,12 @@ async function ice_cream_inventory(params){
                         }else{
                             count_box.innerHTML=parseFloat(count_box.innerHTML)+1
                         }
-                        //similar logic is used to build running totals for the grand total column.
-                        if(count_total_box.innerHTML===""){
-                            count_total_box.innerHTML=1
-                        }else{
-                            count_total_box.innerHTML=parseFloat(count_total_box.innerHTML)+1
-                        }
+                        // //similar logic is used to build running totals for the grand total column.
+                        // if(count_total_box.innerHTML===""){
+                        //     count_total_box.innerHTML=1
+                        // }else{
+                        //     count_total_box.innerHTML=parseFloat(count_total_box.innerHTML)+1
+                        // }
 
 
                         //record the quantites
