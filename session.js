@@ -525,7 +525,7 @@ function message(params){
     const msg=document.createElement("div")
     msg.className="message"
     msg.innerHTML=`
-    <div class="${message_class}">
+    <div class="${message_class}" onclick=this.parentNode.dataset.permanent=true>
       ${params.title}
       <div class="msg-ctrl">
       <i class="fas fa-times" onclick="this.parentElement.parentElement.parentElement.remove()" style="cursor: pointer;"></i>
@@ -535,7 +535,7 @@ function message(params){
     ${params.message}
     </div>`
     if(params.seconds>0){
-      setTimeout(function(){msg.remove()},params.seconds*1000)
+      setTimeout(function(){if(!msg.dataset.permanent){msg.remove()}},params.seconds*1000)
     }
     tag("message-center").appendChild(msg)
     return msg

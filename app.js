@@ -211,64 +211,97 @@ async function close_inventory(record_id){
         mode:"close_inventory",
         record_id: record_id
     }
-    const note=tag("inventory-note")
+    const note=tag("notes")
     if(note.value){
-        params.note = note.value
+        const user_data=get_user_data()
+        params.note = {text:note.value,employee:user_data.first_name + " " + user_data.last_name}
     }
     console.log("about to save note", params)
     const response=await post_data(params)
 
     if(response.status==="success"){
         tag("inventory-header").innerHTML="This inventory is marked as complete."
+        tag("notes").disabled="true"
+        tag("notes").placeholder=""
+        
+    }else{
+        message({
+            message:response.message,
+            title:"Note not recorded",
+            kind:"error",
+            seconds:8    
+        })        
     }
 }
 
 function display_status(response){
-    console.log("response", response)
+    console.log("display_status---->response", response)
     tag("inventory-header").style.padding="1rem 0 1rem 0"
-    switch(response.condition){
-        case "closed":
-            tag("inventory-header").innerHTML="This inventory is marked as complete."
-            if(response.note){
-                tag("inventory-footer").innerHTML=response.note
-            }
-            break
-        case "open":
-            tag("inventory-header").innerHTML=`This inventory is already underway. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
-            tag("inventory-footer").innerHTML=`<textarea style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above." id="inventory-note">${response.note || ""}</textarea>`
-            break
-        default:
-            tag("inventory-header").innerHTML=`You just started this inventory. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
-            tag("inventory-footer").innerHTML=`<textarea style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above." id="inventory-note"></textarea>`
-    }
-    
     let message_text
     switch(response.condition){
         case "closed":
             message_text="Working on a closed inventory."
+            tag("inventory-header").innerHTML="This inventory is marked as complete."
+            const html=[`This inventory was initiated by ${response.started_by}.<br>`]
+            if(response.note){
+                const notes=[]
+                for(const note of JSON.parse(response.note)){
+                    notes.push(note.employee + ":")
+                    notes.push(note.text)
+                    notes.push("")
+                }
+                html.push(`<textarea id="notes" disabled="true" style="width:100%;">${notes.join("\n")}</textarea>`)
+                fit_textarea("notes")
+            }
+            tag("inventory-footer").innerHTML=html.join("")
             break
         case "open":
             message_text="This inventory is already underway."
+            tag("inventory-header").innerHTML=`This inventory is already underway. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+            tag("inventory-footer").innerHTML=`This inventory was initiated by ${response.started_by}.<br><textarea id="notes" style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above."></textarea>`
             break
         default:
             message_text="Starting a new inventory."    
+            tag("inventory-header").innerHTML=`You just started this inventory. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+            tag("inventory-footer").innerHTML=`<textarea id="notes" style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above."></textarea>`
     }
-
+    
     message({
         message:message_text,
         title:"Inventory Message",
         seconds:3
     })
 }
+function fit_textarea(textarea_id){
+    const textarea = tag(textarea_id)
+    if(textarea){
+        console.log ("fitting text area")
+        textarea.style.height = ""
+        textarea.style.height = (textarea.scrollHeight+5) + "px"
+    }
 
+}
 
 function display_notes(response){
-    const html=[]
+    const html=['<textarea id="notes" disabled="true" style="width:100%;">']
+
+
+
     for(record of response.records){
         console.log("response------->", record)
-        html.push(`<div>${record.fields.employee} (${app_data.stores[record.fields.store[0]]}):<br>${record.fields.note}</div>`)
+        const notes=[]
+        for(const note of JSON.parse(record.fields.note)){
+            notes.push(`${note.employee} (${app_data.stores[record.fields.store]}):`)
+            notes.push(note.text)
+            notes.push("")
+        }
+
+        //html.push(`<div>${record.fields.employee} (${app_data.stores[record.fields.store[0]]}):<br>${record.fields.note}</div>`)
+        html.push(notes.join("\n"))
     }
-    tag("inventory-footer").innerHTML=html.join("<hr>")
+    html.push('</textarea>')
+    tag("inventory-footer").innerHTML=html.join("")
+    fit_textarea("notes")
 }
 
 
@@ -296,7 +329,7 @@ async function inventory(params){
                 <div id="inventory-title" style="text-align:center"><h2>${params.list} Inventory</h2></div>
                 <div id="inventory-message" style="width:100%"></div>
                 <div id="inventory-header" style="width:100%"></div>
-                <div id="inventory_panel"  style="width:100%"></div>
+                <div id="inventory-panel"  style="width:100%"></div>
                 <div id="inventory-footer" style="width:100%; padding-top:1rem"></div>
             </div>  
         `
@@ -347,7 +380,7 @@ async function inventory(params){
                         <input type="hidden" name="report_style" value="${params.style}">
                         <input type="hidden" name="list" value="${params.list}">
                         </form>`)
-            tag("inventory_panel").innerHTML=html.join("")
+            tag("inventory-panel").innerHTML=html.join("")
           }
         }
 
@@ -476,7 +509,8 @@ async function inventory(params){
                 }     
 
                 html.push("</table>")
-                tag("inventory_panel").innerHTML=html.join("")
+                tag("inventory-panel").innerHTML=html.join("")
+                fit_textarea("notes")
 
 
 
@@ -584,16 +618,13 @@ async function inventory(params){
                     }     
                 }     
                 html.push("</table>")
-                tag("inventory_panel").innerHTML=html.join("")
+                tag("inventory-panel").innerHTML=html.join("")
 
                 //find the cells for entering serving conainers
                 for(record of response.list.records){
                     for(container of record.fields.container){
-                        console.log("app_data.inventory_containers[container]",app_data.inventory_containers[container].substr(0,7),app_data.inventory_containers[container].substr(0,7)==="Opened ")
                         if(app_data.inventory_containers[container]==="Serving Container" || 
                            app_data.inventory_containers[container].substr(0,7)==="Opened "){
-                               console.log("in if", record.id,container)
-                               
                             add_buttons(record.id,container)
                         }
                     }
@@ -631,7 +662,7 @@ async function inventory(params){
                 
             } 
             
-            tag("inventory_panel").addEventListener("focusin", function(event) {
+            tag("inventory-panel").addEventListener("focusin", function(event) {
                 console.log(event.target.tagName)
                 if(event.target.tagName==="INPUT"){
                     event.target.select()
@@ -643,7 +674,7 @@ async function inventory(params){
                     event.stopPropagation()
                 }
             });                
-            tag("inventory_panel").addEventListener("focusout", function(event) {
+            tag("inventory-panel").addEventListener("focusout", function(event) {
                 console.log(event.target.dataset.first_edit)
                 if(event.target.dataset.first_edit==="true"){
                     //need to save the data
@@ -653,11 +684,11 @@ async function inventory(params){
                 
             });       
 
-            
+            fit_textarea("notes")
 
 
         }else{//This executes if the data needed to create the form or report is not retrieved successfully. It is essentially an error message to the user.
-            tag("inventory_panel").innerHTML="Unable to get inventory list: " + response.message.message + "."
+            tag("inventory-panel").innerHTML="Unable to get inventory list: " + response.message.message + "."
         }
     }  
 }
@@ -680,7 +711,7 @@ async function ice_cream_inventory(params){
                 <div id="inventory-title" style="text-align:center"><h2>Ice Cream Inventory</h2></div>
                 <div id="inventory-header" style="width:100%"></div>
                 <div id="inventory-message" style="width:100%"></div>
-                <div id="inventory_panel"  style="width:100%"></div>
+                <div id="inventory-panel"  style="width:100%"></div>
                 <div id="inventory-footer" style="width:100%; padding-top:1rem"></div>
             </div>  
         `
@@ -688,6 +719,7 @@ async function ice_cream_inventory(params){
 
         const user_data = get_user_data()
         console.log ("user_data",user_data)
+
         if(user_data.store.length===1){
             //If the user is associated with exactly 1 store, we call the get_inventory_list function again to populate the rest of the page with the data for that store. 
             tag("inventory-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'//this element is used to add a visual element (spinning wheel) to signify that the site is processing.
@@ -721,7 +753,7 @@ async function ice_cream_inventory(params){
                         <input type="hidden" name="report_style" value="${params.style}">
                         <input type="hidden" name="list" value="Ice Cream">
                         </form>`)
-            tag("inventory_panel").innerHTML=html.join("")
+            tag("inventory-panel").innerHTML=html.join("")
           }
         }
 
@@ -739,7 +771,15 @@ async function ice_cream_inventory(params){
                 },
                 display_status
             )
-        }
+        }else{
+            console.log("================")
+            post_data({
+                mode:"inventory_summary",
+                list:app_data.inventory_lists[params.list]
+                },
+                display_notes
+            )
+       }
 
 
 
@@ -758,6 +798,22 @@ async function ice_cream_inventory(params){
                 //build the HMTL heading for the report
                 tag("inventory-title").innerHTML=`<h2>Ice Cream<br>Inventory Summary</h2>`
 
+                //Build the table to display inventory counts
+                const html=[`
+                <table id="observation-counts" class="inventory-table">
+                    <tr>
+                    <th>Day</th>
+                    `]
+                for(const store of app_data.store_sequence){
+                    html.push(`<th>${store}</th>`)
+
+                }   
+
+                html.push(`<th>Total</th>`)
+                html.push("</tr></table><br>")
+
+
+
 
                 //Build the table to display the report. The columns of the table are: Flavor, the stores available to the user, and the total inventory. Since only the owner is given the option to view inventory counts (see the autheticated_user global variable), all stores will be shown in the report.
                 const header=[`
@@ -772,7 +828,9 @@ async function ice_cream_inventory(params){
 
                 header.push(`<th class="sticky">Total</th>`)
                 header.push("</tr>")
-                const html=[header.join("")]
+
+
+                html.push(header.join(""))
 
                 irregular=[]// used for icecream that is not in regular category
 
@@ -800,7 +858,7 @@ async function ice_cream_inventory(params){
                 html.push(header.join(""))
                 html.push(irregular.join(""))
                 html.push("</table>")
-                tag("inventory_panel").innerHTML=html.join("")
+                tag("inventory-panel").innerHTML=html.join("")
 
 
                 // find the most recent numbers for each store
@@ -819,27 +877,65 @@ async function ice_cream_inventory(params){
                     }
     
                     // now fill the table with the most recent observations found for each flavor/store combination
+                    const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
                     for(const[key,value] of Object.entries(data)){
                         //create "boxes" for the store observations and totals of each flavor based on the identifiers already created for the individual cells (id's of the <td> tags)
 
                         const ids=key.split("|")
+
+                        // record the date and count
+                        if(!tag(value.date +"_"+ids[1])){
+                            const table = tag("observation-counts");
+                            const row = table.insertRow(table.rows.length);
+                            let s=0;
+                            let cell = row.insertCell(s)
+                            const day=new Date(value.date + "T00:00:00.000-07:00");
+                            cell.innerHTML=`${weekday[day.getDay()]} (${day.getMonth()+1}/${day.getDate()})`
+                            cell.className="active"
+                            for(s=0;s<app_data.store_sequence.length;s++){
+                                const cell = row.insertCell(s+1)
+                                cell.id=value.date +"_"+ app_data.stores[app_data.store_sequence[s]]
+                                cell.className="active right"
+                            }   
+                            cell = row.insertCell(s+1)
+                            cell.id=value.date +"_total"
+                            cell.className="active right"
+                            
+                        }
+
+                        const count_total_box = tag(value.date +"_total")
+                        const count_box = tag(value.date +"_"+ids[1])
+
+                        if(count_box.innerHTML===""){
+                            count_box.innerHTML=1
+                        }else{
+                            count_box.innerHTML=parseFloat(count_box.innerHTML)+1
+                        }
+                        //similar logic is used to build running totals for the grand total column.
+                        if(count_total_box.innerHTML===""){
+                            count_total_box.innerHTML=1
+                        }else{
+                            count_total_box.innerHTML=parseFloat(count_total_box.innerHTML)+1
+                        }
+
+
+                        //record the quantites
+                        
                         const total_box = tag(ids[0] + "|total")
                         const box = tag(ids[0]+"|"+ids[1])
 
 
-                        const qty=Math.round(value.quantity*10)/10
-
-                        //There will be more than one current observation for a flavor in each store, so we need to total these observations by store. To do this, if there is not currently a value in the table for flavor/store, it is added. If there is an observation, the new observation is added to the one that is currently there (running total logic).
+                        const qty=round(value.quantity,1)
                         if(box.innerHTML===""){
                             box.innerHTML=qty
                         }else{
-                            box.innerHTML=parseFloat(box.innerHTML)+qty
+                            box.innerHTML=round(parseFloat(box.innerHTML)+qty,1)
                         }
                         //similar logic is used to build running totals for the grand total column.
                         if(total_box.innerHTML===""){
                             total_box.innerHTML=qty
                         }else{
-                            total_box.innerHTML=parseFloat(total_box.innerHTML)+qty
+                            total_box.innerHTML=round(parseFloat(total_box.innerHTML)+qty,1)
                         }
   
                     }
@@ -905,7 +1001,7 @@ async function ice_cream_inventory(params){
                 html.push(header.join(""))
                 html.push(irregular.join(""))
                 html.push("</table>")
-                tag("inventory_panel").innerHTML=html.join("")
+                tag("inventory-panel").innerHTML=html.join("")
 
 
                 //find the cells for entering serving conainers
@@ -955,12 +1051,12 @@ async function ice_cream_inventory(params){
                     }
                 }
 
-                tag("inventory_panel").addEventListener("keyup", function(event) {
+                tag("inventory-panel").addEventListener("keyup", function(event) {
                     if (event.keyCode === 13) {
                       move_down(event.target);
                     }
                 });                
-                tag("inventory_panel").addEventListener("focusin", function(event) {
+                tag("inventory-panel").addEventListener("focusin", function(event) {
                     event.target.select()
                     if(event.target.value){return}
                     event.target.value=0
@@ -969,7 +1065,7 @@ async function ice_cream_inventory(params){
                     event.target.dataset.first_edit=true
                     event.stopPropagation()
                 });                
-                tag("inventory_panel").addEventListener("focusout", function(event) {
+                tag("inventory-panel").addEventListener("focusout", function(event) {
                     console.log(event.target.dataset.first_edit)
                     if(event.target.dataset.first_edit==="true"){
                         //need to save the data
@@ -985,7 +1081,7 @@ async function ice_cream_inventory(params){
                 
             } 
         }else{//This executes if the data needed to create the form or report is not retrieved successfully. It is essentially an error message to the user.
-            tag("inventory_panel").innerHTML="Unable to get inventory list: " + response.message + "."
+            tag("inventory-panel").innerHTML="Unable to get inventory list: " + response.message + "."
         }
     }  
 }
@@ -1024,7 +1120,6 @@ function add_buttons(item_id, container){
     //this function is used to create the input buttons for recording the inventory observations. Notice that we only use the options for case 3. We might use the other options in the future.
     const box = tag(item_id + "|" + container)
     const cell = box.parentElement
-    console.log("adding buttons",item_id, container)
     if(app_data.inventory_containers[container]==="Serving Container" ||
        app_data.inventory_containers[container]==="Dipping Cabinet" ||
        app_data.inventory_containers[container].substr(0,7)==="Opened " ){
@@ -1113,6 +1208,12 @@ function flavor_total(flavor_id){
 async function update_observation(entry){
     //this is the function that is called to update an observation when the value is change in the input form.
     //console.log(entry.parentElement)
+
+    if(entry.parentElement.classList.contains("working")){
+        // don't allow a cell currently posing to be edited.
+        return
+    }
+
     if(entry.value.length===0){return}//blank value
     if(!logged_in()){show_home();return}//If the user logs out, not updates are permitted.
     // add data validation. If a values that is not a number has been entered, the cell is highlighted in gray and an error message is presented to the user. No update will be made.
@@ -1140,6 +1241,7 @@ async function update_observation(entry){
     }
     //visually signal by modifying the appearance of the cell that the value is currently being updated.
     entry.parentElement.style.backgroundColor=null
+
     entry.parentElement.classList.add("working")
     
     if(entry.dataset.obs_id){
