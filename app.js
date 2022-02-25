@@ -1028,18 +1028,21 @@ async function ice_cream_inventory(params){
                 // To the extent that observations may already exist for a flavor in that location in that store, they will be populated on the table. Changes to these values will also be updated.
                 if(response.data.records){
                     for(record of response.data.records){
+                        //console.log(record.fields.item[0] + "|" + record.fields.container[0])
                         const box=tag(record.fields.item[0] + "|" + record.fields.container[0])
-                        box.dataset.obs_id=record.id
-                        box.value=record.fields.quantity
-                        for(const div of getAllSiblings(box)){
-                           // console.log(div.tagName,div.innerHTML,record.fields.quantity,val_map[div.innerHTML],record.fields.quantity===val_map[div.innerHTML])
-                            if(div.tagName==="DIV" && record.fields.quantity===val_map[div.innerHTML]){
-                                div.style.backgroundColor="lightGrey"
-                                div.style.color="black"
+                        if(box){// box should always be defined unless an id has changed for a prouct
+                            box.dataset.obs_id=record.id
+                            box.value=record.fields.quantity
+                            for(const div of getAllSiblings(box)){
+                            // console.log(div.tagName,div.innerHTML,record.fields.quantity,val_map[div.innerHTML],record.fields.quantity===val_map[div.innerHTML])
+                                if(div.tagName==="DIV" && record.fields.quantity===val_map[div.innerHTML]){
+                                    div.style.backgroundColor="lightGrey"
+                                    div.style.color="black"
+                                }
                             }
+                            box.parentElement.classList.add("inactive")
+                            box.parentElement.classList.remove("active")
                         }
-                        box.parentElement.classList.add("inactive")
-                        box.parentElement.classList.remove("active")
                     }
                 }
 
@@ -1120,6 +1123,7 @@ function add_buttons(item_id, container){
     //this function is used to create the input buttons for recording the inventory observations. Notice that we only use the options for case 3. We might use the other options in the future.
     const box = tag(item_id + "|" + container)
     const cell = box.parentElement
+    cell.style.minWidth="120px"
     if(app_data.inventory_containers[container]==="Serving Container" ||
        app_data.inventory_containers[container]==="Dipping Cabinet" ||
        app_data.inventory_containers[container].substr(0,7)==="Opened " ){
