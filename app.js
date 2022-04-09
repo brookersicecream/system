@@ -795,7 +795,7 @@ async function ice_cream_inventory(params){
             if(response.report_style==='summary'){
             //If the style property is set to "summary", we build the report of the most recent count.
 
-                console.log("response--->", response)
+                console.log("Response--->", response)
                 //build the HMTL heading for the report
                 tag("inventory-title").innerHTML=`<h2>Ice Cream<br>Inventory Summary</h2>`
 
@@ -923,20 +923,27 @@ async function ice_cream_inventory(params){
                         
                         const total_box = tag(ids[0] + "|total")
                         const box = tag(ids[0]+"|"+ids[1])
+                        if(box){// there is a box to write the value to
 
+                            const qty=round(value.quantity,1)
+                            if(box.innerHTML===""){
+                                box.innerHTML=qty
+                            }else{
+                                box.innerHTML=round(parseFloat(box.innerHTML)+qty,1)
+                            }
+                            //similar logic is used to build running totals for the grand total column.
+                            if(total_box.innerHTML===""){
+                                total_box.innerHTML=qty
+                            }else{
+                                total_box.innerHTML=round(parseFloat(total_box.innerHTML)+qty,1)
+                            }
+    
 
-                        const qty=round(value.quantity,1)
-                        if(box.innerHTML===""){
-                            box.innerHTML=qty
                         }else{
-                            box.innerHTML=round(parseFloat(box.innerHTML)+qty,1)
+                            console.log("box not found")
+                            console.log(ids[0]+"|"+ids[1],round(value.quantity,1))
                         }
-                        //similar logic is used to build running totals for the grand total column.
-                        if(total_box.innerHTML===""){
-                            total_box.innerHTML=qty
-                        }else{
-                            total_box.innerHTML=round(parseFloat(total_box.innerHTML)+qty,1)
-                        }
+
   
                     }
                 }
