@@ -940,7 +940,7 @@ async function ice_cream_inventory(params){
     
 
                         }else{
-                            console.log("box not found")
+                            console.log("Box not found")
                             console.log(ids[0]+"|"+ids[1],round(value.quantity,1))
                         }
 
