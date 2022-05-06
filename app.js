@@ -234,6 +234,7 @@ async function close_inventory(record_id){
     }
 }
 
+
 function display_status(response){
     console.log("display_status---->response", response)
     tag("inventory-header").style.padding="1rem 0 1rem 0"
