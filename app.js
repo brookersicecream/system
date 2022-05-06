@@ -313,8 +313,9 @@ function round(number,digits){
 
 
 async function inventory(params){
+    console.log("==1======================================")
     //this function is used both the record inventory counts and to build a summary report. The "style" property of the params sent to the function determines whether the function is in "count" mode or "summary" mode. Also, if the user has access to multiple stores, they will be presented with the option to select the store they wish to work with.
-
+    console.log("at function inventory ---", params)
     if(!logged_in()){show_home();return}//in case followed a link after logging out. This prevents the user from using this feature when they are not authenticated.
 
     //First we hide the menu
@@ -324,6 +325,7 @@ async function inventory(params){
 
     //This function is set up recursively to build the page for working with inventory. The first time the function is called, the HTML shell is created for displaying either the inventory form for recording the count or the inventory report. Note that this will only be built if there is a "style" property set when the function is called. Once the shell is created, the function is called again to either built the form for recording an inventory count or create the summary report.
     if(params.style){
+        console.log("==2======================================")
         //building the HTML shell
         tag("canvas").innerHTML=` 
             <div class="page">
@@ -345,20 +347,23 @@ async function inventory(params){
         }
         console.log("store_list",store_list)
         if(store_list.length===1){
+            console.log("==3======================================")
             //If the user is associated with exactly 1 store, we call the get_inventory_list function again to populate the rest of the page with the data for that store. 
             tag("inventory-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'//this element is used to add a visual element (spinning wheel) to signify that the site is processing.
             //we call the get_inventory_list function (mode) filtered to show only "Ice Cream" (filter) - note that there are other inventory items - in the store associated with this user (store).
             inventory({
                 mode:"get_inventory_list",
                 list:params.list,
-                store:store_list[0]
+                store:store_list[0],
+                report_style:params.style
             })
         }else{
+            console.log("==4======================================")
             //We get here if the user is associated with more than 1 store. 
           if(params.style==='summary'){
               //If the user wants to see a summary of the most recent count, we call the "get_inventory_list" function to populate the page with data from all of the stores that are associated with that user.
             tag("inventory-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'
-            console.log("===========================================")
+            console.log("==5======================================")
             inventory({
                 mode:"get_inventory_list",
                 list:params.list,
@@ -366,6 +371,7 @@ async function inventory(params){
             })
 
           }else{
+            console.log("==6======================================")
             //If the user wants to record an inventory count, we build a form to have the user select the store they wish to work with.
             const html=['<form>Store: <select name="store">']
             console.log("params.stores",params.stores)
@@ -385,12 +391,15 @@ async function inventory(params){
           }
         }
 
-    }else if(params.store){    
+    }else if(params.store){ 
+        console.log("==7======================================")
         //Notice that the first time through the store property is undefined and is set when the user data is loaded. Therefore this code will only process the second time through once the store property is set. During this pass, we determine whether to display the report of the last recorded inventory or display the form for recording a new inventory count.
         console.log(" inventory params=store", params)
         //we use a call to the "post_data" function to use Google App Script to retrieve the data needed to processs the form or the report
 
         if(params.report_style==='update'){
+            console.log("==8======================================")
+
             // record the inventory as being in progress
             post_data({
                 mode:"start_inventory",
@@ -400,6 +409,10 @@ async function inventory(params){
                 display_status
             )
         }else{
+            console.log("==9======================================")
+
+            console.log("================")
+            console.log("at display not summary")
             console.log("================")
             post_data({
                 mode:"inventory_summary",
@@ -416,9 +429,11 @@ async function inventory(params){
 
 
         if(response.status==="success"){//If the data is retrieved successfully, we proceed.
+            console.log("==10======================================")
             
             if(response.report_style==='summary'){
             //If the style property is set to "summary", we build the report of the most recent count.
+                console.log("==11======================================")
 
                 console.log("response->", response)
                 //build the HMTL heading for the report
@@ -517,6 +532,8 @@ async function inventory(params){
 
                 //if there is data to display, proceed
                 if(response.data.records){
+                    console.log("==12======================================")
+
                     //process through each available data item
                     // for(record of response.data.records){
                     //     //identity the flavor/store combination for each observation
@@ -573,6 +590,8 @@ async function inventory(params){
                 }
                 
             }else{
+            console.log("==13======================================")
+
             //this is generating the form for updating inventory counts in an individual store
             
 
@@ -689,6 +708,8 @@ async function inventory(params){
 
 
         }else{//This executes if the data needed to create the form or report is not retrieved successfully. It is essentially an error message to the user.
+            console.log("==14======================================")
+
             tag("inventory-panel").innerHTML="Unable to get inventory list: " + response.message.message + "."
         }
     }  
@@ -696,6 +717,8 @@ async function inventory(params){
 
 
 async function ice_cream_inventory(params){
+    console.log("==1a======================================")
+
     //this function is used both the record inventory counts and to build a summary report. The "style" property of the params sent to the function determines whether the function is in "count" mode or "summary" mode. Also, if the user has access to multiple stores, they will be presented with the option to select the store they wish to work with.
     window.list="Ice Cream"
     if(!logged_in()){show_home();return}//in case followed a link after logging out. This prevents the user from using this feature when they are not authenticated.
@@ -707,6 +730,7 @@ async function ice_cream_inventory(params){
     //This function is set up recursively to build the page for working with inventory. The first time the function is called, the HTML shell is created for displaying either the inventory form for recording the count or the inventory report. Note that this will only be built if there is a "style" property set when the function is called. Once the shell is created, the function is called again to either built the form for recording an inventory count or create the summary report.
     if(params.style){
         //building the HTML shell
+        console.log("==2a======================================")
         tag("canvas").innerHTML=` 
             <div class="page">
                 <div id="inventory-title" style="text-align:center"><h2>Ice Cream Inventory</h2></div>
@@ -722,18 +746,23 @@ async function ice_cream_inventory(params){
         console.log ("user_data",user_data)
 
         if(user_data.store.length===1){
+            console.log("==3a======================================", params)
             //If the user is associated with exactly 1 store, we call the get_inventory_list function again to populate the rest of the page with the data for that store. 
             tag("inventory-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'//this element is used to add a visual element (spinning wheel) to signify that the site is processing.
             //we call the get_inventory_list function (mode) filtered to show only "Ice Cream" (filter) - note that there are other inventory items - in the store associated with this user (store).
             ice_cream_inventory({
                 mode:"get_inventory_list",
                 list:"Ice Cream",
-                store:user_data.store[0]
+                store:user_data.store[0],
+                report_style:params.style
             })
         }else{
+            console.log("==4a======================================")
+
             //We get here if the user is associated with more than 1 store. 
           if(params.style==='summary'){
-              //If the user wants to see a summary of the most recent count, we call the "get_inventory_list" function to populate the page with data from all of the stores that are associated with that user.
+            console.log("==5a======================================")
+            //If the user wants to see a summary of the most recent count, we call the "get_inventory_list" function to populate the page with data from all of the stores that are associated with that user.
             tag("inventory-message").innerHTML='<i class="fas fa-spinner fa-pulse"></i>'
             ice_cream_inventory({
                 mode:"get_inventory_list",
@@ -742,12 +771,15 @@ async function ice_cream_inventory(params){
             })
 
           }else{
+            console.log("==6a======================================")
+
             //If the user wants to record an inventory count, we build a form to have the user select the store they wish to work with.
             const html=['<form>Store: <select name="store">']
             for(store of user_data.store){
                 html.push(`<option value="${store}">${app_data.stores[store]}</option>`)
             }
             //When the user selects the store using the form, the "get_inventory_list" function is invoked on the submission of the form to populate the rest of this page with the data for that store
+
             html.push(`</select>
                         <button type="button" id="choose_store_button" onclick="ice_cream_inventory(form_data(this,true))">Submit</button>
                         <input type="hidden" name="mode" value="get_inventory_list">
@@ -759,12 +791,16 @@ async function ice_cream_inventory(params){
         }
 
     }else if(params.store){    
+        console.log("==7a======================================")
+
         //Notice that the first time through the store property is undefined and is set when the user data is loaded. Therefore this code will only process the second time through once the store property is set. During this pass, we determine whether to display the report of the last recorded inventory or display the form for recording a new inventory count.
         console.log("at ice_cream_inventory params=store")
         //we use a call to the "post_data" function to use Google App Script to retrieve the data needed to processs the form or the report
 
         if(params.report_style==='update'){
             // record the inventory as being in progress
+            console.log("==8a======================================")
+
             post_data({
                 mode:"start_inventory",
                 store:params.store,
@@ -773,7 +809,8 @@ async function ice_cream_inventory(params){
                 display_status
             )
         }else{
-            console.log("================")
+            console.log("==9a======================================")
+
             post_data({
                 mode:"inventory_summary",
                 list:app_data.inventory_lists[params.list]
@@ -791,7 +828,8 @@ async function ice_cream_inventory(params){
 
 
         if(response.status==="success"){//If the data is retrieved successfully, we proceed.
-            
+            console.log("==10a======================================")
+
             if(response.report_style==='summary'){
             //If the style property is set to "summary", we build the report of the most recent count.
 
@@ -949,6 +987,8 @@ async function ice_cream_inventory(params){
                 }
                 
             }else{
+                console.log("==11a======================================")
+
             //this is generating the form for updating inventory counts in an individual store
                 // keep track of navigation
                 window.rows={}
@@ -1091,6 +1131,8 @@ async function ice_cream_inventory(params){
                 
             } 
         }else{//This executes if the data needed to create the form or report is not retrieved successfully. It is essentially an error message to the user.
+            console.log("==12a======================================")
+
             tag("inventory-panel").innerHTML="Unable to get inventory list: " + response.message + "."
         }
     }  
