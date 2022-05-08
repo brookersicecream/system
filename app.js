@@ -186,6 +186,7 @@ async function archive_inventory(){
 async function close_inventory(record_id){
 
     // check to see if we have un-marked inventory items
+
     const missing=document.getElementsByClassName("active").length
     let message_text 
     if(missing>0){
@@ -206,6 +207,7 @@ async function close_inventory(record_id){
         return
     }
 
+    tag("close-inventory").disabled=true
 
     const params={
         mode:"close_inventory",
@@ -258,7 +260,7 @@ function display_status(response){
             break
         case "open":
             message_text="This inventory is already underway."
-            tag("inventory-header").innerHTML=`This inventory is already underway. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+            tag("inventory-header").innerHTML=`This inventory is already underway. <button id="close-inventory" onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
             tag("inventory-footer").innerHTML=`This inventory was initiated by ${response.started_by}.<br><textarea id="notes" style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above."></textarea>`
             break
         default:
