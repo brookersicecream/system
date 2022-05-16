@@ -265,7 +265,7 @@ function display_status(response){
             break
         default:
             message_text="Starting a new inventory."    
-            tag("inventory-header").innerHTML=`You just started this inventory. <button onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
+            tag("inventory-header").innerHTML=`You just started this inventory. <button id="close-inventory"  onclick="close_inventory('${response.record_id}')">Done with inventory.</button>`
             tag("inventory-footer").innerHTML=`<textarea id="notes" style="height:5rem;width:100%" placeholder="Notes about this inventory entered here will be saved when you click the 'Done with inventory' button above."></textarea>`
     }
     
